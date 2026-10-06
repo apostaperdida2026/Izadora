@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="pt-BR">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aposta Perdida — Jogo Educativo</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #071827;
+      --deep: #04111d;
+      --panel: #0d2943;
+      --blue: #1597e5;
+      --sky: #79ceff;
+      --ice: #d7efff;
+      --white: #f8fbff;
+      --red: #ef4444;
+      --rose: #fecaca;
+      --green: #64e6ae;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      width: 100%;
+      min-height: calc(100 * min(var(--vh, 1vh), 1vh));
+      margin: 0;
+      color: var(--white);
+      background: var(--navy);
+      font-family: "DM Sans", sans-serif;
+      overflow-x: hidden;
+    }
+
+    button { font: inherit; }
+    button:focus-visible {
+      outline: 3px solid var(--ice);
+      outline-offset: 4px;
+    }
+
+    .app-wrapper {
+      position: relative;
+      width: 100%;
+      min-height: calc(100 * min(var(--vh, 1vh), 1vh));
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 88% 9%, rgba(21,151,229,.25), transparent 27rem),
+        radial-gradient(circle at 5% 86%, rgba(26,92,151,.2), transparent 31rem),
+        var(--navy);
+    }
+
+    .grid-atmosphere {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .22;
+      background-image:
+        linear-gradient(rgba(178,225,255,.11) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(178,225,255,.11) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: linear-gradient(to bottom, black, transparent 88%);
+    }
+
+    .screen {
+      position: relative;
+      z-index: 1;
+      display: none;
+      width: 100%;
+      min-height: calc(100 * min(var(--vh, 1vh), 1vh));
+      padding: 2rem 1.25rem;
+      animation: screen-enter .45s ease both;
+    }
+
+    .screen.active { display: flex; }
+    .screen-content { width: 100%; max-width: 1120px; margin: auto; }
+    .display { font-family: "Space Mono", monospace; letter-spacing: -.065em; }
+    .eyebrow {
+      color: var(--sky);
+      font-family: "Space Mono", monospace;
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .simulation-pill {
+      border: 1px solid rgba(121,206,255,.45);
+      border-radius: 999px;
+      padding: .5rem .8rem;
+      box-shadow: inset 0 0 18px rgba(21,151,229,.08);
+    }
+
+    .game-layout {
+      display: grid;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .game-panel, .diagram-panel, .explanation-card {
+      border: 1px solid rgba(215,239,255,.17);
+      background: rgba(13,41,67,.8);
+      box-shadow: 0 20px 48px rgba(0,0,0,.18);
+      backdrop-filter: blur(12px);
+    }
+
+    .game-panel {
+      border-radius: 28px;
+      padding: 1.2rem;
+    }
+
+    .choice-button {
+      display: flex;
+      min-height: 118px;
+      width: 100%;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      border: 1px solid rgba(215,239,255,.18);
+      border-radius: 20px;
+      color: var(--white);
+      background: rgba(7,24,39,.6);
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+
+    .choice-button:hover, .choice-button:focus-visible, .choice-button.selected {
+      transform: translateY(-4px);
+      border-color: var(--sky);
+      background: rgba(21,151,229,.18);
+      box-shadow: 0 0 0 4px rgba(21,151,229,.1), 0 14px 28px rgba(0,0,0,.2);
+    }
+
+    .choice-emoji { font-size: 2.35rem; line-height: 1; }
+
+    .versus-board {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: .7rem;
+      margin-top: 1.2rem;
+      border: 1px solid rgba(121,206,255,.2);
+      border-radius: 22px;
+      padding: 1rem;
+      background: rgba(4,17,29,.5);
+    }
+
+    .player-slot { text-align: center; }
+    .slot-label {
+      color: var(--sky);
+      font-family: "Space Mono", monospace;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .11em;
+    }
+
+    .hand-reveal {
+      min-height: 3.7rem;
+      margin-top: .4rem;
+      color: var(--white);
+      font-family: "Space Mono", monospace;
+      font-size: .94rem;
+      font-weight: 700;
+    }
+
+    .hand-reveal .big-hand {
+      display: block;
+      min-height: 2.45rem;
+      font-family: "DM Sans", sans-serif;
+      font-size: 2.3rem;
+      line-height: 1;
+    }
+
+    .vs-mark {
+      color: var(--sky);
+      font-family: "Space Mono", monospace;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .round-status {
+      min-height: 1.55rem;
+      margin-top: 1rem;
+      color: var(--sky);
+      font-size: .92rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .outcome-card {
+      display: none;
+      margin-top: 1rem;
+      border-radius: 18px;
+      padding: 1rem;
+      border: 1px solid rgba(121,206,255,.3);
+      animation: result-enter .32s ease both;
+    }
+
+    .outcome-card.visible { display: block; }
+    .outcome-win { background: rgba(15,102,78,.32); border-color: rgba(100,230,174,.5); }
+    .outcome-draw { background: rgba(21,151,229,.16); }
+    .outcome-loss { background: rgba(100,29,42,.5); border-color: rgba(239,68,68,.48); }
+
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .7rem;
+      border: 0;
+      border-radius: 999px;
+      padding: .95rem 1.35rem;
+      cursor: pointer;
+      transition: transform .2s ease, box-shadow .2s ease;
+      background: var(--blue);
+      color: var(--white);
+    }
+
+    .action-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 13px 26px rgba(21,151,229,.35);
+    }
+
+    .diagram-panel {
+      border-radius: 28px;
+      padding: 1.1rem;
+    }
+
+    .diagram-shell {
+      position: relative;
+      width: min(100%, 500px);
+      aspect-ratio: 1.12 / 1;
+      margin: .5rem auto 0;
+    }
+
+    .diagram-ring {
+      position: absolute;
+      inset: 13%;
+      border: 2px dashed rgba(121,206,255,.72);
+      border-radius: 50%;
+      animation: slow-spin 30s linear infinite;
+    }
+
+    .hand-node {
+      position: absolute;
+      z-index: 2;
+      display: flex;
+      width: 142px;
+      min-height: 108px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(215,239,255,.2);
+      border-radius: 22px;
+      padding: .75rem;
+      text-align: center;
+      background: rgba(13,41,67,.92);
+      box-shadow: 0 18px 36px rgba(0,0,0,.25);
+      transition: border-color .3s ease, box-shadow .3s ease;
+    }
+
+    .hand-node.active-choice {
+      border-color: var(--sky);
+      box-shadow: 0 0 22px rgba(121,206,255,.5), 0 18px 36px rgba(0,0,0,.35);
+    }
+
+    .node-rock { top: 0; left: 50%; transform: translateX(-50%); }
+    .node-paper { right: 0; bottom: 7%; }
+    .node-scissors { left: 0; bottom: 7%; }
+    .hand-symbol { font-size: 2.8rem; line-height: 1; }
+
+    .relation-tag {
+      position: absolute;
+      z-index: 3;
+      border: 1px solid rgba(121,206,255,.28);
+      border-radius: 999px;
+      padding: .35rem .5rem;
+      color: var(--ice);
+      font-size: .56rem;
+      font-weight: 800;
+      line-height: 1.15;
+      text-align: center;
+      background: rgba(4,17,29,.92);
+    }
+
+    .relation-rock { top: 27%; left: 3%; }
+    .relation-scissors { right: 0; bottom: 38%; }
+    .relation-paper { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+    .explainer-grid {
+      display: grid;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .explanation-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 24px;
+      padding: 1.4rem;
+    }
+
+    .explanation-card::after {
+      position: absolute;
+      top: 0;
+      left: 1.4rem;
+      width: 54px;
+      height: 3px;
+      content: "";
+      background: var(--blue);
+    }
+
+    .card-icon {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 12px;
+      color: var(--sky);
+      background: rgba(21,151,229,.14);
+    }
+
+    .alert-card .card-icon { color: var(--rose); background: rgba(239,68,68,.14); }
+    .red-highlight { margin-top: 1rem; border-left: 3px solid var(--red); padding-left: .8rem; color: var(--rose); font-weight: 800; }
+
+    .message-banner {
+      border: 1px solid rgba(239,68,68,.48);
+      border-radius: 22px;
+      padding: 1.15rem;
+      box-shadow: 0 18px 42px rgba(0,0,0,.18);
+    }
+
+    @keyframes screen-enter {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes result-enter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slow-spin { to { transform: rotate(360deg); } }
+
+    @media (min-width: 860px) {
+      .screen { padding: 2.5rem 2rem; }
+      .game-layout { grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); gap: 2rem; }
+      .explainer-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 500px) {
+      .hand-node { width: 108px; min-height: 94px; border-radius: 17px; }
+      .hand-symbol { font-size: 2.25rem; }
+      .relation-tag { font-size: .47rem; padding: .28rem .36rem; }
+      .choice-button { min-height: 102px; }
+    }
+  </style>
+ </head>
+ <body data-template-id="__page-root">
+  <div class="app-wrapper">
+   <div class="grid-atmosphere" aria-hidden="true"></div>
+   <main>
+    <section id="game-screen" class="screen active" aria-label="Jogo educativo de Pedra, Papel e Tesoura">
+     <div class="screen-content">
+      <header class="flex items-center justify-between gap-4 mb-8">
+       <p data-template-id="brand-name" class="canva-text display font-bold">APOSTA PERDIDA</p>
+       <span data-template-id="simulation-label" class="canva-tag simulation-pill">SIMULADOR EDUCATIVO</span>
+      </header>
+      <div class="game-layout">
+       <div>
+        <p data-template-id="game-kicker" class="canva-text eyebrow">TEORIA DOS JOGOS &amp; PROBABILIDADE</p>
+        <h1 data-template-id="game-title" class="canva-text display mt-3 font-bold leading-tight">Aposta Perdida: Pedra, Papel e Tesoura</h1>
+        <p data-template-id="game-intro" class="canva-text mt-5 max-w-xl leading-relaxed">Explore a ilusão de controle em jogos de sorte e aleatoriedade. Faça suas jogadas contra o computador e veja como a probabilidade e os ciclos matemáticos funcionam na prática.</p>
+        <section class="game-panel mt-7" aria-labelledby="choice-title">
+         <h2 id="choice-title" data-template-id="choice-title" class="canva-text font-bold">Escolha sua jogada:</h2>
+         <div class="grid grid-cols-3 gap-3 mt-4" role="group" aria-label="Escolha sua jogada">
+          <button type="button" class="choice-button" data-choice="PEDRA" data-emoji="✊" aria-pressed="false">
+           <span class="choice-emoji" aria-hidden="true">✊</span>
+           <span data-template-id="choice-rock" class="canva-text display font-bold">PEDRA</span>
+          </button>
+          <button type="button" class="choice-button" data-choice="PAPEL" data-emoji="✋" aria-pressed="false">
+           <span class="choice-emoji" aria-hidden="true">✋</span>
+           <span data-template-id="choice-paper" class="canva-text display font-bold">PAPEL</span>
+          </button>
+          <button type="button" class="choice-button" data-choice="TESOURA" data-emoji="✌️" aria-pressed="false">
+           <span class="choice-emoji" aria-hidden="true">✌️</span>
+           <span data-template-id="choice-scissors" class="canva-text display font-bold">TESOURA</span>
+          </button>
+         </div>
+         <div class="versus-board" aria-label="Resultado da rodada">
+          <div class="player-slot">
+           <span data-template-id="you-label" class="canva-text slot-label">SUA JOGADA</span>
+           <div id="player-reveal" class="hand-reveal" aria-live="polite"><span class="big-hand">?</span></div>
+          </div>
+          <span class="vs-mark" aria-hidden="true">VS</span>
+          <div class="player-slot">
+           <span data-template-id="computer-label" class="canva-text slot-label">COMPUTADOR</span>
+           <div id="computer-reveal" class="hand-reveal" aria-live="polite"><span class="big-hand">?</span></div>
+          </div>
+         </div>
+         <p id="round-status" class="round-status" aria-live="polite"></p>
+         <article id="outcome-win" class="outcome-card outcome-win" aria-live="polite">
+          <h3 data-template-id="win-title" class="canva-text font-bold">🎉 Você Venceu a Rodada!</h3>
+          <p data-template-id="win-text" class="canva-text mt-2 leading-relaxed">Sua escolha superou a do computador nesta jogada! Em poucas tentativas, a sorte pode favorecer o jogador, mas no longo prazo a estatística prevalece.</p>
+         </article>
+         <article id="outcome-draw" class="outcome-card outcome-draw" aria-live="polite">
+          <h3 data-template-id="draw-title" class="canva-text font-bold">🤝 Rodada Empatada!</h3>
+          <p data-template-id="draw-text" class="canva-text mt-2 leading-relaxed">Ambos escolheram a mesma opção. Empates mostram a simetria perfeita da aleatoriedade quando não há vantagens embutidas.</p>
+         </article>
+         <article id="outcome-loss" class="outcome-card outcome-loss" aria-live="polite">
+          <h3 data-template-id="loss-title" class="canva-text font-bold">💥 O Computador Venceu!</h3>
+          <p data-template-id="loss-text" class="canva-text mt-2 leading-relaxed">A jogada do computador derrotou a sua. Sequências de derrotas ilustram como o saldo e a banca se comportam sob o impacto do acaso.</p>
+         </article>
+         <button id="new-round-button" type="button" data-template-id="new-round-button" class="canva-button action-button mt-5 font-bold">
+          <i data-lucide="rotate-ccw" width="18" height="18" aria-hidden="true"></i>
+          <span data-template-id="new-round-text" class="canva-text">Reiniciar Rodada</span>
+         </button>
+        </section>
+        <button id="explain-button" type="button" data-template-id="explain-button" class="canva-button action-button mt-6 font-bold">
+         <span data-template-id="explain-button-text" class="canva-text">Entender a Matemática por Trás</span>
+         <i data-lucide="arrow-right" width="19" height="19" aria-hidden="true"></i>
+        </button>
+       </div>
+       <aside class="diagram-panel" aria-labelledby="diagram-title">
+        <h2 id="diagram-title" data-template-id="diagram-title" class="canva-text text-center font-bold">Ciclo de Dominância</h2>
+        <div class="diagram-shell" aria-label="Diagrama circular de Pedra, Papel e Tesoura">
+         <div class="diagram-ring" aria-hidden="true"></div>
+         <article id="node-rock" data-template-id="rock-node" class="canva-card hand-node node-rock">
+          <span class="hand-symbol" aria-hidden="true">✊</span>
+          <span data-template-id="rock-node-text" class="canva-text display mt-2 font-bold">PEDRA</span>
+         </article>
+         <article id="node-paper" data-template-id="paper-node" class="canva-card hand-node node-paper">
+          <span class="hand-symbol" aria-hidden="true">✋</span>
+          <span data-template-id="paper-node-text" class="canva-text display mt-2 font-bold">PAPEL</span>
+         </article>
+         <article id="node-scissors" data-template-id="scissors-node" class="canva-card hand-node node-scissors">
+          <span class="hand-symbol" aria-hidden="true">✌️</span>
+          <span data-template-id="scissors-node-text" class="canva-text display mt-2 font-bold">TESOURA</span>
+         </article>
+         <span data-template-id="relation-rock" class="canva-tag relation-tag relation-rock">Pedra quebra Tesoura</span>
+         <span data-template-id="relation-scissors" class="canva-tag relation-tag relation-scissors">Tesoura corta Papel</span>
+         <span data-template-id="relation-paper" class="canva-tag relation-tag relation-paper">Papel embrulha Pedra</span>
+        </div>
+       </aside>
+      </div>
+     </div>
+    </section>
+    <section id="explain-screen" class="screen" aria-label="Explicação educativa" aria-hidden="true">
+     <div class="screen-content">
+      <header class="flex items-center justify-between gap-4">
+       <p data-template-id="brand-name" class="canva-text display font-bold">APOSTA PERDIDA</p>
+       <span data-template-id="explanation-label" class="canva-tag simulation-pill">ANÁLISE EDUCATIVA</span>
+      </header>
+      <div class="mt-10 max-w-3xl">
+       <p data-template-id="explanation-kicker" class="canva-text eyebrow">CONSCIENTIZAÇÃO &amp; TEORIA DOS JOGOS</p>
+       <h2 data-template-id="explanation-title" class="canva-text display mt-3 font-bold leading-tight">Por que em Apostas a Longo Prazo a Derrota é Certa?</h2>
+      </div>
+      <div class="explainer-grid">
+       <article data-template-id="control-card" class="canva-card explanation-card">
+        <div class="card-icon" aria-hidden="true">
+         <i data-lucide="target" width="24" height="24"></i>
+        </div>
+        <div class="mt-5 text-3xl" aria-hidden="true">✋</div>
+        <h3 data-template-id="control-title" class="canva-text mt-4 font-bold">A Ilusão de Controle</h3>
+        <p data-template-id="control-text" class="canva-text mt-3 leading-relaxed">Muitos apostadores acreditam que possuem "métodos infalíveis" ou "intuição" para prever a próxima jogada aleatória. Isso é um viés cognitivo.</p>
+        <p data-template-id="control-alert" class="canva-text red-highlight">⚠️ Atenção: Tentar encontrar padrões onde só existe acaso é a causa primária de grandes prejuízos.</p>
+       </article>
+       <article data-template-id="cycle-card" class="canva-card explanation-card">
+        <div class="card-icon" aria-hidden="true">
+         <i data-lucide="rotate-cw" width="24" height="24"></i>
+        </div>
+        <div class="mt-5 text-3xl" aria-hidden="true">✊ ✋ ✌️</div>
+        <h3 data-template-id="cycle-title" class="canva-text mt-4 font-bold">Probabilidade &amp; Margem da Casa</h3>
+        <p data-template-id="cycle-text" class="canva-text mt-3 leading-relaxed">Em um jogo simétrico, cada jogada tem 33,3% de chance de vitória. Em cassinos reais, as odds são levemente desfavoráveis ao jogador para garantir lucro constante à casa.</p>
+        <p data-template-id="cycle-alert" class="canva-text red-highlight">📊 Estatística: Quanto mais rodadas você joga, mais próximo a média real chega da perda teórica acumulada.</p>
+       </article>
+       <article data-template-id="visual-card" class="canva-card explanation-card alert-card">
+        <div class="card-icon" aria-hidden="true">
+         <i data-lucide="triangle-alert" width="24" height="24"></i>
+        </div>
+        <div class="mt-5 text-3xl" aria-hidden="true">⚠️</div>
+        <h3 data-template-id="visual-title" class="canva-text mt-4 font-bold">O Viés da Confirmação</h3>
+        <p data-template-id="visual-text" class="canva-text mt-3 leading-relaxed">O cérebro humano tende a memorizar a emoção das poucas vitórias e ignorar a sequência de derrotas que consomem o saldo no decorrer do tempo.</p>
+        <p data-template-id="visual-alert" class="canva-text red-highlight">🚨 Perigo: Vitórias isoladas criam a falsa impressão de que é possível ter lucro sustentável.</p>
+       </article>
+      </div>
+      <aside data-template-id="conclusion-box" class="canva-banner message-banner mt-6">
+       <p data-template-id="conclusion-text" class="canva-text text-center leading-relaxed">💡 <strong>Conclusão Educativa:</strong> A única aposta 100% vitoriosa em jogos de azar é não apostar. A matemática e a probabilidade sempre trabalham a favor da banca a longo prazo!</p>
+      </aside>
+      <button id="back-button" type="button" data-template-id="back-button" class="canva-button action-button mt-7 font-bold">
+       <i data-lucide="arrow-left" width="19" height="19" aria-hidden="true"></i>
+       <span data-template-id="back-button-text" class="canva-text">Voltar ao Jogo</span>
+      </button>
+     </div>
+    </section>
+   </main>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (window.lucide && typeof window.lucide.createIcons === "function") {
+        window.lucide.createIcons();
+      }
+
+      const gameScreen = document.getElementById("game-screen");
+      const explainScreen = document.getElementById("explain-screen");
+      const choiceButtons = document.querySelectorAll(".choice-button");
+      const playerReveal = document.getElementById("player-reveal");
+      const computerReveal = document.getElementById("computer-reveal");
+      const roundStatus = document.getElementById("round-status");
+      const outcomes = {
+        win: document.getElementById("outcome-win"),
+        draw: document.getElementById("outcome-draw"),
+        loss: document.getElementById("outcome-loss")
+      };
+
+      const nodes = {
+        PEDRA: document.getElementById("node-rock"),
+        PAPEL: document.getElementById("node-paper"),
+        TESOURA: document.getElementById("node-scissors")
+      };
+
+      const choices = [
+        { name: "PEDRA", emoji: "✊" },
+        { name: "PAPEL", emoji: "✋" },
+        { name: "TESOURA", emoji: "✌️" }
+      ];
+
+      function revealChoice(element, choice) {
+        element.innerHTML = '<span class="big-hand" aria-hidden="true">' + choice.emoji + '</span><span>' + choice.name + '</span>';
+      }
+
+      function hideOutcomes() {
+        Object.values(outcomes).forEach((card) => card && card.classList.remove("visible"));
+      }
+
+      function highlightDiagramNode(choiceName) {
+        Object.values(nodes).forEach(node => node && node.classList.remove("active-choice"));
+        if (nodes[choiceName]) {
+          nodes[choiceName].classList.add("active-choice");
+        }
+      }
+
+      function getOutcome(player, computer) {
+        if (player === computer) return "draw";
+        const wins = {
+          PEDRA: "TESOURA",
+          PAPEL: "PEDRA",
+          TESOURA: "PAPEL"
+        };
+        return wins[player] === computer ? "win" : "loss";
+      }
+
+      function playRound(button) {
+        const playerChoiceName = button.dataset.choice;
+        const playerEmoji = button.dataset.emoji;
+        const player = { name: playerChoiceName, emoji: playerEmoji };
+
+        const computer = choices[Math.floor(Math.random() * choices.length)];
+        const outcome = getOutcome(player.name, computer.name);
+
+        choiceButtons.forEach((choiceButton) => {
+          const selected = choiceButton === button;
+          choiceButton.classList.toggle("selected", selected);
+          choiceButton.setAttribute("aria-pressed", String(selected));
+        });
+
+        revealChoice(playerReveal, player);
+        revealChoice(computerReveal, computer);
+        hideOutcomes();
+        
+        if (outcomes[outcome]) {
+          outcomes[outcome].classList.add("visible");
+        }
+
+        highlightDiagramNode(player.name);
+
+        const status = {
+          win: "Você venceu esta rodada!",
+          draw: "Esta rodada terminou em empate.",
+          loss: "O computador venceu esta rodada."
+        };
+        roundStatus.textContent = status[outcome];
+      }
+
+      function resetRound() {
+        choiceButtons.forEach((button) => {
+          button.classList.remove("selected");
+          button.setAttribute("aria-pressed", "false");
+        });
+        playerReveal.innerHTML = '<span class="big-hand">?</span>';
+        computerReveal.innerHTML = '<span class="big-hand">?</span>';
+        roundStatus.textContent = "";
+        hideOutcomes();
+        Object.values(nodes).forEach(node => node && node.classList.remove("active-choice"));
+        if (choiceButtons[0]) choiceButtons[0].focus();
+      }
+
+      function showScreen(showGame) {
+        gameScreen.classList.toggle("active", showGame);
+        explainScreen.classList.toggle("active", !showGame);
+        gameScreen.setAttribute("aria-hidden", String(!showGame));
+        explainScreen.setAttribute("aria-hidden", String(showGame));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+        if (window.lucide && typeof window.lucide.createIcons === "function") {
+          window.lucide.createIcons();
+        }
+
+        const focusTarget = showGame ? document.querySelector(".choice-button") : document.getElementById("back-button");
+        if (focusTarget) focusTarget.focus();
+      }
+
+      choiceButtons.forEach((button) => button.addEventListener("click", () => playRound(button)));
+      
+      const newRoundBtn = document.getElementById("new-round-button");
+      if (newRoundBtn) newRoundBtn.addEventListener("click", resetRound);
+
+      const explainBtn = document.getElementById("explain-button");
+      if (explainBtn) explainBtn.addEventListener("click", () => showScreen(false));
+
+      const backBtn = document.getElementById("back-button");
+      if (backBtn) backBtn.addEventListener("click", () => showScreen(true));
+
+      document.addEventListener("keydown", (event) => {
+        if ((event.key === "Escape" || event.key === "ArrowLeft") && explainScreen.classList.contains("active")) {
+          showScreen(true);
+        }
+      });
+    });
+  </script>
+ </body>
+</html>
