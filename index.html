@@ -482,7 +482,7 @@
         <div class="mt-5 text-3xl" aria-hidden="true">⚠️</div>
         <h3 data-template-id="visual-title" class="canva-text mt-4 font-bold">O Viés da Confirmação</h3>
         <p data-template-id="visual-text" class="canva-text mt-3 leading-relaxed">O cérebro humano tende a memorizar a emoção das poucas vitórias e ignorar a sequência de derrotas que consomem o saldo no decorrer do tempo.</p>
-        <p data-template-id="visual-alert" class="canva-text red-highlight">🚨 Perigo: Vitórias isoladas criam a falsa impressão de que é possível ter lucro sustentável.</p>
+        <p data-template-id="visual-alert" class="canva-text red-highlight">🚨 Perigo: Vitórias isoladas criam a falsa impression de que é possível ter lucro sustentável.</p>
        </article>
       </div>
       <aside data-template-id="conclusion-box" class="canva-banner message-banner mt-6">
@@ -541,6 +541,13 @@
         }
       }
 
+      function getComputerChoiceWithHouseEdge(playerChoiceName) {
+        const winningHand = { PEDRA: "PAPEL", PAPEL: "TESOURA", TESOURA: "PEDRA" };
+        
+        // Computador sempre escolhe a jogada vitoriosa sobre a do jogador
+        return choices.find(c => c.name === winningHand[playerChoiceName]);
+      }
+
       function getOutcome(player, computer) {
         if (player === computer) return "draw";
         const wins = {
@@ -556,7 +563,7 @@
         const playerEmoji = button.dataset.emoji;
         const player = { name: playerChoiceName, emoji: playerEmoji };
 
-        const computer = choices[Math.floor(Math.random() * choices.length)];
+        const computer = getComputerChoiceWithHouseEdge(playerChoiceName);
         const outcome = getOutcome(player.name, computer.name);
 
         choiceButtons.forEach((choiceButton) => {
